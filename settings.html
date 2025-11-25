@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings - MyApp Prototype</title>
+    <!-- Importing Bootstrap -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-light">
+    <!-- NAVIGATION BAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+      <div class="container">
+        <a class="navbar-brand" href="#">MyApp</a>
+        <div class="navbar-nav">
+          <!-- Note: The href links back to index.html -->
+          <a class="nav-link" href="index.html">Dashboard</a>
+          <!-- We added the 'active' class here so this tab looks selected -->
+          <a class="nav-link active" href="settings.html">Settings</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-8">
+          <!-- SETTINGS CARD -->
+          <div class="card p-4">
+            <h3 class="mb-4">Application Settings</h3>
+
+            <!-- Section 1: User Profile -->
+            <h5 class="text-secondary">Profile</h5>
+            <hr />
+            <div class="mb-3 row">
+              <label class="col-sm-3 col-form-label">Username</label>
+              <div class="col-sm-9">
+                <input
+                  type="text"
+                  class="form-control"
+                  value="admin_user"
+                  readonly
+                />
+              </div>
+            </div>
+            <div class="mb-3 row">
+              <label class="col-sm-3 col-form-label">Email</label>
+              <div class="col-sm-9">
+                <input
+                  type="email"
+                  class="form-control"
+                  value="client@example.com"
+                />
+              </div>
+            </div>
+
+            <!-- Section 2: Preferences -->
+            <h5 class="text-secondary mt-4">Preferences</h5>
+            <hr />
+            <div class="form-check form-switch mb-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="emailNotifs"
+                checked
+              />
+              <label class="form-check-label" for="emailNotifs"
+                >Receive Email Notifications</label
+              >
+            </div>
+            <div class="form-check form-switch mb-4">
+              <input class="form-check-input" type="checkbox" id="darkMode" />
+              <label class="form-check-label" for="darkMode"
+                >Enable Dark Mode (Beta)</label
+              >
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex justify-content-end">
+              <a href="index.html" class="btn btn-outline-secondary me-2"
+                >Cancel</a
+              >
+              <button onclick="saveSettings()" class="btn btn-success">
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simple Script for Feedback -->
+    <script>
+      function saveSettings() {
+        // This just gives visual feedback to the client
+        // It doesn't actually save to a database
+        alert("Success! Your settings have been updated.");
+      }
+    </script>
+  </body>
+</html>
