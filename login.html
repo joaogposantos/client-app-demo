@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login History - My App</title>
+    <!-- Importing Bootstrap for nice "App" styling -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Import Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  </head>
+  <body class="bg-light">
+    <!-- NAVIGATION BAR -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+      <div class="container">
+        <a class="navbar-brand" href="#">MyApp</a>
+        <div class="navbar-nav">
+          <a class="nav-link" href="index.html">Dashboard</a>
+          <a class="nav-link active" href="login.html">Login History</a>
+          <a class="nav-link" href="settings.html">Settings</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="row">
+        <div class="col-12">
+          <div class="card p-4">
+            <h3 class="mb-4">User Login History</h3>
+            
+            <table class="table table-hover">
+              <thead class="table-dark">
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Last Login</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="loginTableBody">
+                <!-- Data will be loaded from Supabase -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Add New Login Entry Section -->
+      <div class="row mt-4">
+        <div class="col-md-6">
+          <div class="card p-3">
+            <h5>Add New Login Entry</h5>
+            <div class="mb-2">
+              <input
+                type="text"
+                id="inputName"
+                class="form-control"
+                placeholder="Name"
+              />
+            </div>
+            <div class="mb-2">
+              <input
+                type="email"
+                id="inputEmail"
+                class="form-control"
+                placeholder="Email"
+              />
+            </div>
+            <div class="mb-2">
+              <input
+                type="datetime-local"
+                id="inputLastLogin"
+                class="form-control"
+              />
+            </div>
+            <button onclick="addLogin()" class="btn btn-primary w-100">
+              Add Entry
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+      // Initialize Supabase client
+      const SUPABASE_URL = 'https://bjvcjnucacasmytbqpvx.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqdmNqbnVjYWNhc215dGJxcHZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwMzI1MTksImV4cCI6MjA3OTYwODUxOX0.wB6M7haaws59sv6mGFiFwiZ-qvu0CFNvhz8tASd3cMs';
+      
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      // Format date to readable format
+      function formatDate(dateString) {
+        if (!dateString) return 'Never';
+        const date = new Date(dateString);
+        return date.toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+
+      // Load login entries from Supabase
+      async function loadLogins() {
+        try {
+          const { data: logins, error } = await supabase
+            .from('login')
+            .select('*')
+            .order('last_login', { ascending: false });
+
+          if (error) {
+            console.error('Error loading logins:', error);
+            alert('Error loading login history: ' + error.message);
+            return;
+          }
+
+          const tbody = document.getElementById("loginTableBody");
+          tbody.innerHTML = "";
+
+          if (logins && logins.length > 0) {
+            logins.forEach(login => {
+              const row = tbody.insertRow();
+              
+              const cell1 = row.insertCell(0);
+              const cell2 = row.insertCell(1);
+              const cell3 = row.insertCell(2);
+              const cell4 = row.insertCell(3);
+              
+              cell1.innerHTML = login.name || '';
+              cell2.innerHTML = login.email || '';
+              cell3.innerHTML = formatDate(login.last_login);
+              
+              // Add delete button
+              cell4.innerHTML = '<button class="btn btn-danger btn-sm" onclick="deleteLogin(' + login.id + ')">Delete</button>';
+            });
+          } else {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No login entries found</td></tr>';
+          }
+        } catch (err) {
+          console.error('Unexpected error:', err);
+          alert('Unexpected error loading login history');
+        }
+      }
+
+      // Add new login entry
+      async function addLogin() {
+        const name = document.getElementById("inputName").value;
+        const email = document.getElementById("inputEmail").value;
+        const lastLogin = document.getElementById("inputLastLogin").value;
+
+        if (name === "" || email === "") {
+          alert("Please fill in name and email!");
+          return;
+        }
+
+        try {
+          const { data, error } = await supabase
+            .from('login')
+            .insert([
+              { 
+                name: name, 
+                email: email, 
+                last_login: lastLogin || new Date().toISOString()
+              }
+            ])
+            .select();
+
+          if (error) {
+            console.error('Error adding login:', error);
+            alert('Error adding login entry: ' + error.message);
+            return;
+          }
+
+          // Clear the inputs
+          document.getElementById("inputName").value = "";
+          document.getElementById("inputEmail").value = "";
+          document.getElementById("inputLastLogin").value = "";
+
+          // Reload the table
+          await loadLogins();
+          
+          alert('Login entry added successfully!');
+        } catch (err) {
+          console.error('Unexpected error:', err);
+          alert('Unexpected error adding login entry');
+        }
+      }
+
+      // Delete login entry
+      async function deleteLogin(loginId) {
+        if (!confirm('Are you sure you want to delete this login entry?')) {
+          return;
+        }
+
+        try {
+          const { error } = await supabase
+            .from('login')
+            .delete()
+            .eq('id', loginId);
+
+          if (error) {
+            console.error('Error deleting login:', error);
+            alert('Error deleting login entry: ' + error.message);
+            return;
+          }
+
+          // Reload the table
+          await loadLogins();
+          
+          alert('Login entry deleted successfully!');
+        } catch (err) {
+          console.error('Unexpected error:', err);
+          alert('Unexpected error deleting login entry');
+        }
+      }
+
+      // Load data when page loads
+      window.onload = function() {
+        loadLogins();
+        
+        // Set current datetime as default for the datetime input
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('inputLastLogin').value = now.toISOString().slice(0, 16);
+      };
+    </script>
+  </body>
+</html>
