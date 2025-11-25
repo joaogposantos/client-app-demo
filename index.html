@@ -62,18 +62,8 @@
                   <th>Status</th>
                 </tr>
               </thead>
-              <tbody>
-                <!-- Static data to start with -->
-                <tr>
-                  <td>Alice Smith</td>
-                  <td>Admin</td>
-                  <td class="text-success">Active</td>
-                </tr>
-                <tr>
-                  <td>Bob Jones</td>
-                  <td>Editor</td>
-                  <td class="text-secondary">Offline</td>
-                </tr>
+              <tbody id="userTableBody">
+                <!-- Data will be loaded from localStorage -->
               </tbody>
             </table>
             <p class="text-muted mt-2">2025-11-25 16:09 UTC - Claude changed this</p>
@@ -84,6 +74,64 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
+      // Initialize with default users if localStorage is empty
+      function initializeTable() {
+        let users = getUsers();
+        
+        // If no users in localStorage, add default ones
+        if (users.length === 0) {
+          users = [
+            { name: "Alice Smith", role: "Admin", status: "Active" },
+            { name: "Bob Jones", role: "Editor", status: "Offline" }
+          ];
+          saveUsers(users);
+        }
+        
+        // Load and display all users
+        loadUsers();
+      }
+
+      // Get users from localStorage
+      function getUsers() {
+        const usersJson = localStorage.getItem("userTableData");
+        return usersJson ? JSON.parse(usersJson) : [];
+      }
+
+      // Save users to localStorage
+      function saveUsers(users) {
+        localStorage.setItem("userTableData", JSON.stringify(users));
+      }
+
+      // Load users from localStorage and display in table
+      function loadUsers() {
+        const users = getUsers();
+        const tbody = document.getElementById("userTableBody");
+        
+        // Clear existing rows
+        tbody.innerHTML = "";
+        
+        // Add each user to the table
+        users.forEach(user => {
+          const row = tbody.insertRow();
+          
+          const cell1 = row.insertCell(0);
+          const cell2 = row.insertCell(1);
+          const cell3 = row.insertCell(2);
+          
+          cell1.innerHTML = user.name;
+          cell2.innerHTML = user.role;
+          
+          // Apply appropriate styling based on status
+          if (user.status === "Active") {
+            cell3.innerHTML = '<span class="text-success">Active</span>';
+          } else if (user.status === "Offline") {
+            cell3.innerHTML = '<span class="text-secondary">Offline</span>';
+          } else {
+            cell3.innerHTML = '<span class="text-success">' + user.status + '</span>';
+          }
+        });
+      }
+
       function addRow() {
         // 1. Get values from the input boxes
         var name = document.getElementById("inputName").value;
@@ -95,27 +143,31 @@
           return;
         }
 
-        // 2. Find the table
-        var table = document
-          .getElementById("userTable")
-          .getElementsByTagName("tbody")[0];
+        // 2. Get current users from localStorage
+        let users = getUsers();
+        
+        // 3. Add new user to array
+        users.push({
+          name: name,
+          role: role,
+          status: "Just Added"
+        });
+        
+        // 4. Save to localStorage
+        saveUsers(users);
+        
+        // 5. Reload the table to show new data
+        loadUsers();
 
-        // 3. Create a new row and cells
-        var newRow = table.insertRow();
-
-        var cell1 = newRow.insertCell(0);
-        var cell2 = newRow.insertCell(1);
-        var cell3 = newRow.insertCell(2);
-
-        // 4. Put the text into the cells
-        cell1.innerHTML = name;
-        cell2.innerHTML = role;
-        cell3.innerHTML = '<span class="text-success">Just Added</span>'; // Simulating status
-
-        // 5. Clear the inputs
+        // 6. Clear the inputs
         document.getElementById("inputName").value = "";
         document.getElementById("inputRole").value = "";
       }
+
+      // Load table data when page loads
+      window.onload = function() {
+        initializeTable();
+      };
     </script>
   </body>
 </html>
