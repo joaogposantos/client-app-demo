@@ -9,6 +9,8 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <!-- Import Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body class="bg-light">
     <!-- NAVIGATION BAR -->
@@ -60,10 +62,11 @@
                   <th>Name</th>
                   <th>Role</th>
                   <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody id="userTableBody">
-                <!-- Data will be loaded from localStorage -->
+                <!-- Data will be loaded from Supabase -->
               </tbody>
             </table>
             <p class="text-muted mt-2">2025-11-25 16:09 UTC - Claude changed this</p>
@@ -74,99 +77,134 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-      // Initialize with default users if localStorage is empty
-      function initializeTable() {
-        let users = getUsers();
-        
-        // If no users in localStorage, add default ones
-        if (users.length === 0) {
-          users = [
-            { name: "Alice Smith", role: "Admin", status: "Active" },
-            { name: "Bob Jones", role: "Editor", status: "Offline" }
-          ];
-          saveUsers(users);
-        }
-        
-        // Load and display all users
-        loadUsers();
-      }
+      // Initialize Supabase client
+      const SUPABASE_URL = 'https://bjvcjnucacasmytbqpvx.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJqdmNqbnVjYWNhc215dGJxcHZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwMzI1MTksImV4cCI6MjA3OTYwODUxOX0.wB6M7haaws59sv6mGFiFwiZ-qvu0CFNvhz8tASd3cMs';
+      
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      // Get users from localStorage
-      function getUsers() {
-        const usersJson = localStorage.getItem("userTableData");
-        return usersJson ? JSON.parse(usersJson) : [];
-      }
+      // Load users from Supabase and display in table
+      async function loadUsers() {
+        try {
+          const { data: users, error } = await supabase
+            .from('users')
+            .select('*')
+            .order('id', { ascending: true });
 
-      // Save users to localStorage
-      function saveUsers(users) {
-        localStorage.setItem("userTableData", JSON.stringify(users));
-      }
-
-      // Load users from localStorage and display in table
-      function loadUsers() {
-        const users = getUsers();
-        const tbody = document.getElementById("userTableBody");
-        
-        // Clear existing rows
-        tbody.innerHTML = "";
-        
-        // Add each user to the table
-        users.forEach(user => {
-          const row = tbody.insertRow();
-          
-          const cell1 = row.insertCell(0);
-          const cell2 = row.insertCell(1);
-          const cell3 = row.insertCell(2);
-          
-          cell1.innerHTML = user.name;
-          cell2.innerHTML = user.role;
-          
-          // Apply appropriate styling based on status
-          if (user.status === "Active") {
-            cell3.innerHTML = '<span class="text-success">Active</span>';
-          } else if (user.status === "Offline") {
-            cell3.innerHTML = '<span class="text-secondary">Offline</span>';
-          } else {
-            cell3.innerHTML = '<span class="text-success">' + user.status + '</span>';
+          if (error) {
+            console.error('Error loading users:', error);
+            alert('Error loading users: ' + error.message);
+            return;
           }
-        });
+
+          const tbody = document.getElementById("userTableBody");
+          tbody.innerHTML = "";
+
+          if (users && users.length > 0) {
+            users.forEach(user => {
+              const row = tbody.insertRow();
+              
+              const cell1 = row.insertCell(0);
+              const cell2 = row.insertCell(1);
+              const cell3 = row.insertCell(2);
+              const cell4 = row.insertCell(3);
+              
+              cell1.innerHTML = user.name || '';
+              cell2.innerHTML = user.role || '';
+              
+              // Apply appropriate styling based on status
+              const status = user.status || 'Active';
+              if (status === "Active") {
+                cell3.innerHTML = '<span class="text-success">Active</span>';
+              } else if (status === "Offline") {
+                cell3.innerHTML = '<span class="text-secondary">Offline</span>';
+              } else {
+                cell3.innerHTML = '<span class="text-success">' + status + '</span>';
+              }
+              
+              // Add delete button
+              cell4.innerHTML = '<button class="btn btn-danger btn-sm" onclick="deleteUser(' + user.id + ')">Delete</button>';
+            });
+          }
+        } catch (err) {
+          console.error('Unexpected error:', err);
+          alert('Unexpected error loading users');
+        }
       }
 
-      function addRow() {
-        // 1. Get values from the input boxes
-        var name = document.getElementById("inputName").value;
-        var role = document.getElementById("inputRole").value;
+      // Add new user to Supabase
+      async function addRow() {
+        const name = document.getElementById("inputName").value;
+        const role = document.getElementById("inputRole").value;
 
-        // Simple validation to ensure fields aren't empty
         if (name === "" || role === "") {
           alert("Please fill in both fields!");
           return;
         }
 
-        // 2. Get current users from localStorage
-        let users = getUsers();
-        
-        // 3. Add new user to array
-        users.push({
-          name: name,
-          role: role,
-          status: "Just Added"
-        });
-        
-        // 4. Save to localStorage
-        saveUsers(users);
-        
-        // 5. Reload the table to show new data
-        loadUsers();
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .insert([
+              { 
+                name: name, 
+                role: role, 
+                status: 'Active'
+              }
+            ])
+            .select();
 
-        // 6. Clear the inputs
-        document.getElementById("inputName").value = "";
-        document.getElementById("inputRole").value = "";
+          if (error) {
+            console.error('Error adding user:', error);
+            alert('Error adding user: ' + error.message);
+            return;
+          }
+
+          // Clear the inputs
+          document.getElementById("inputName").value = "";
+          document.getElementById("inputRole").value = "";
+
+          // Reload the table
+          await loadUsers();
+          
+          alert('User added successfully!');
+        } catch (err) {
+          console.error('Unexpected error:', err);
+          alert('Unexpected error adding user');
+        }
+      }
+
+      // Delete user from Supabase
+      async function deleteUser(userId) {
+        if (!confirm('Are you sure you want to delete this user?')) {
+          return;
+        }
+
+        try {
+          const { error } = await supabase
+            .from('users')
+            .delete()
+            .eq('id', userId);
+
+          if (error) {
+            console.error('Error deleting user:', error);
+            alert('Error deleting user: ' + error.message);
+            return;
+          }
+
+          // Reload the table
+          await loadUsers();
+          
+          alert('User deleted successfully!');
+        } catch (err) {
+          console.error('Unexpected error:', err);
+          alert('Unexpected error deleting user');
+        }
       }
 
       // Load table data when page loads
       window.onload = function() {
-        initializeTable();
+        loadUsers();
       };
     </script>
   </body>
